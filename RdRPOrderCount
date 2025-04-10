@@ -1,0 +1,55 @@
+#ORDER COUNT 
+
+# Load libraries
+library(tidyverse)
+library(ggplot2)
+library(readr)
+library(conflicted)
+library(dplyr)
+conflicts_prefer(dplyr::filter)
+
+# Set working directory 
+setwd("/work/pi_jlb_umass_edu/blanchardlab/RNA_phages")
+
+# Load RdRP data
+RdRP_data <- read_tsv("data/RiboV1.4_Info.tsv")
+
+# Filter IMG/M dataset only
+RdRP_img <- RdRP_data |> filter(Set == "IMG/M - Chen et al 2019")
+
+# Count total instances/per viral order 
+summary_order_counts <- RdRP_img |>
+  filter(!is.na(Order)) |>
+  count(Order, name = "InstanceCount") |>
+  arrange(desc(InstanceCount))
+
+# Debug 
+print(summary_order_counts)
+
+# Plot orderlevel RdRP instance counts
+plot_obj <- ggplot(summary_order_counts, aes(x = reorder(Order, -InstanceCount), y = InstanceCount)) +
+  geom_col(fill = "#F2B705") +
+  labs(title = "Total RdRP Instances by Viral Order",
+       x = "Viral Order", y = "Total Instances") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+print(plot_obj)
+ggsave("/work/pi_jlb_umass_edu/blanchardlab/jaz/viral_order_plot.png", plot = plot_obj, width = 10, height = 6, dpi = 300)
+
+
+> print(summary_order_counts)
+# A tibble: 117 × 2
+   Order          InstanceCount
+   <chr>                  <int>
+ 1 Picornavirales         78682
+ 2 Timlovirales           32878
+ 3 Norzivirales           27742
+ 4 Cryppavirales          23410
+ 5 Ourlivirales           19182
+ 6 Tolivirales            16585
+ 7 o.0042                 12552
+ 8 Nodamuvirales          10552
+ 9 Durnavirales           10231
+10 Sobelivirales           7296
+
