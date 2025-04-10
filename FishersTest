@@ -1,0 +1,680 @@
+# Start:
+
+# Load libraries
+library(tidyverse)
+library(ggplot2)
+library(readr)
+library(conflicted)
+library(dplyr)
+library(stats)
+conflicts_prefer(dplyr::filter)
+
+# Set working directory 
+setwd("/work/pi_jlb_umass_edu/blanchardlab/RNA_phages")
+
+# Load RdRP data
+RdRP_data <- read_tsv("data/RiboV1.4_Info.tsv")
+
+
+
+# HEATED VS CON
+
+# Load and filter metadata
+metadata <- read_csv("data/BW_15yrs_metadata.csv") |>
+  separate(`...4`, c("Site", "Treatment", "Subplot", "Layer"), "-") |>
+  rename(Inc = `...3`, DataType = `...5`) |>
+  select(Site, Treatment, Subplot, Layer, Inc, DataType, `IMG Portal`) |>
+  filter(DataType == "metaT", Inc == "Native") |>
+  mutate(`IMG Portal` = as.character(`IMG Portal`))
+
+# Filter IMG/M dataset only
+RdRP_img <- RdRP_data |> filter(Set == "IMG/M - Chen et al 2019")
+
+# Join RdRP data with metadata
+joined_data <- left_join(RdRP_img, metadata, by = c("Source" = "IMG Portal"))
+
+# Count viral orders per treatment
+summary_order_treatment <- joined_data |>
+  filter(!is.na(Order), !is.na(Treatment)) |>
+  count(Order, Treatment, name = "InstanceCount") |>
+  pivot_wider(names_from = Treatment, values_from = InstanceCount, values_fill = 0)
+
+# Rename columns for easier reference
+summary_order_treatment <- summary_order_treatment |>
+  rename(control_count = C, heated_count = H)
+
+total_control <- sum(summary_order_treatment$control_count)
+total_heated <- sum(summary_order_treatment$heated_count)
+
+# Fisher's Exact Test: for each Order, compare control vs heated counts
+fisher_results <- summary_order_treatment |>
+  rowwise() |>
+  mutate(
+    p_value = fisher.test(matrix(c(control_count, heated_count,
+                                   total_control - control_count,
+                                   total_heated - heated_count),
+                                 nrow = 2))$p.value
+  ) |>
+  ungroup() |>
+  arrange(p_value)
+
+# Save Fisher's test results
+write_csv(fisher_results, "/work/pi_jlb_umass_edu/blanchardlab/jaz/fishers_test_by_order.csv")
+
+
+
+# LAYER
+
+# Load and filter metadata
+metadata <- read_csv("data/BW_15yrs_metadata.csv") |>
+  separate(`...4`, c("Site", "Treatment", "Subplot", "Layer"), "-") |>
+  rename(Inc = `...3`, DataType = `...5`) |>
+  select(Site, Treatment, Subplot, Layer, Inc, DataType, `IMG Portal`) |>
+  filter(DataType == "metaT", Inc == "Native") |>
+  mutate(`IMG Portal` = as.character(`IMG Portal`))
+
+# Filter IMG/M dataset only
+RdRP_img <- RdRP_data |> filter(Set == "IMG/M - Chen et al 2019")
+
+# Join RdRP data with metadata
+joined_data <- left_join(RdRP_img, metadata, by = c("Source" = "IMG Portal"))
+
+# Count viral orders per treatment
+summary_order_treatment <- joined_data |>
+  filter(!is.na(Order), !is.na(Treatment)) |>
+  count(Order, Treatment, name = "InstanceCount") |>
+  pivot_wider(names_from = Treatment, values_from = InstanceCount, values_fill = 0)
+
+# Rename columns for easier reference
+summary_order_treatment <- summary_order_treatment |>
+  rename(control_count = C, heated_count = H)
+
+total_control <- sum(summary_order_treatment$control_count)
+total_heated <- sum(summary_order_treatment$heated_count)
+
+# Fisher's Exact Test: for each Order, compare control vs heated counts
+fisher_results <- summary_order_treatment |>
+  rowwise() |>
+  mutate(
+    p_value = fisher.test(matrix(c(control_count, heated_count,
+                                   total_control - control_count,
+                                   total_heated - heated_count),
+                                 nrow = 2))$p.value
+  ) |>
+  ungroup() |>
+  arrange(p_value)
+
+# Save Fisher's test results
+write_csv(fisher_results, "/work/pi_jlb_umass_edu/blanchardlab/jaz/fishers_test_by_order.csv")
+
+
+# MINERAL vs ORGANIC 
+
+# Count viral orders per layer
+summary_order_layer <- joined_data |>
+  filter(!is.na(Order), !is.na(Layer)) |>
+  count(Order, Layer, name = "InstanceCount") |>
+  pivot_wider(names_from = Layer, values_from = InstanceCount, values_fill = 0)
+
+# Print layer column names to confirm
+print(colnames(summary_order_layer))
+
+# Rename 
+summary_order_layer <- summary_order_layer |>
+  rename(organic_count = O, mineral_count = M)
+
+total_organic <- sum(summary_order_layer$organic_count)
+total_mineral <- sum(summary_order_layer$mineral_count)
+
+# Fisher's Exact Test for layer comparison
+fisher_layer_results <- summary_order_layer |>
+  rowwise() |>
+  mutate(
+    p_value = fisher.test(matrix(c(organic_count, mineral_count,
+                                   total_organic - organic_count,
+                                   total_mineral - mineral_count),
+                                 nrow = 2))$p.value
+  ) |>
+  ungroup() |>
+  arrange(p_value)
+
+# Save results
+write_csv(fisher_layer_results, "/work/pi_jlb_umass_edu/blanchardlab/jaz/fishers_test_by_order_layer.csv")
+
+
+
+
+#COMBINED 
+
+# Load and filter metadata
+metadata <- read_csv("data/BW_15yrs_metadata.csv") |>
+  separate(`...4`, c("Site", "Treatment", "Subplot", "Layer"), "-") |>
+  rename(Inc = `...3`, DataType = `...5`) |>
+  select(Site, Treatment, Subplot, Layer, Inc, DataType, `IMG Portal`) |>
+  filter(DataType == "metaT", Inc == "Native") |>
+  mutate(`IMG Portal` = as.character(`IMG Portal`))
+
+# Filter IMG/M dataset only
+RdRP_img <- RdRP_data |> filter(Set == "IMG/M - Chen et al 2019")
+
+# Join RdRP data with metadata
+joined_data <- left_join(RdRP_img, metadata, by = c("Source" = "IMG Portal"))
+
+# Count viral orders per treatment
+summary_order_treatment <- joined_data |>
+  filter(!is.na(Order), !is.na(Treatment)) |>
+  count(Order, Treatment, name = "InstanceCount") |>
+  pivot_wider(names_from = Treatment, values_from = InstanceCount, values_fill = 0)
+
+# Rename columns for easier reference
+summary_order_treatment <- summary_order_treatment |>
+  rename(control_count = C, heated_count = H)
+
+total_control <- sum(summary_order_treatment$control_count)
+total_heated <- sum(summary_order_treatment$heated_count)
+
+# Fisher's Exact Test: for each Order, compare control vs heated counts
+fisher_results <- summary_order_treatment |>
+  rowwise() |>
+  mutate(
+    p_value = fisher.test(matrix(c(control_count, heated_count,
+                                   total_control - control_count,
+                                   total_heated - heated_count),
+                                 nrow = 2))$p.value
+  ) |>
+  ungroup() |>
+  arrange(p_value)
+
+# Save Fisher's test results
+write_csv(fisher_results, "/work/pi_jlb_umass_edu/blanchardlab/jaz/fishers_test_by_order.csv")
+
+
+# MINERAL vs ORGANIC 
+
+# Count viral orders per layer
+summary_order_layer <- joined_data |>
+  filter(!is.na(Order), !is.na(Layer)) |>
+  count(Order, Layer, name = "InstanceCount") |>
+  pivot_wider(names_from = Layer, values_from = InstanceCount, values_fill = 0)
+
+# Rename 
+summary_order_layer <- summary_order_layer |>
+  rename(organic_count = O, mineral_count = M)
+
+total_organic <- sum(summary_order_layer$organic_count)
+total_mineral <- sum(summary_order_layer$mineral_count)
+
+# Fisher's Exact Test for layer comparison
+fisher_layer_results <- summary_order_layer |>
+  rowwise() |>
+  mutate(
+    p_value = fisher.test(matrix(c(organic_count, mineral_count,
+                                   total_organic - organic_count,
+                                   total_mineral - mineral_count),
+                                 nrow = 2))$p.value
+  ) |>
+  ungroup() |>
+  arrange(p_value)
+
+# Save results
+write_csv(fisher_layer_results, "/work/pi_jlb_umass_edu/blanchardlab/jaz/fishers_test_by_order_layer.csv")
+
+
+# TREATMENT + LAYER COMBINED 
+
+# Count viral orders per treatment and layer
+summary_order_combo <- joined_data |>
+  filter(!is.na(Order), !is.na(Treatment), !is.na(Layer)) |>
+  count(Order, Treatment, Layer, name = "InstanceCount") |>
+  unite("group", Treatment:Layer) |>
+  pivot_wider(names_from = group, values_from = InstanceCount, values_fill = 0)
+
+# Print column names
+print(colnames(summary_order_combo))
+
+# Assign totals and run Fisher's test for each order
+combo_groups <- colnames(summary_order_combo)[-1]
+total_counts <- colSums(summary_order_combo[combo_groups])
+
+fisher_combo_results <- summary_order_combo |>
+  rowwise() |>
+  mutate(
+    p_value = fisher.test(matrix(
+      c_across(all_of(combo_groups)),
+      nrow = 2
+    ))$p.value
+  ) |>
+  ungroup() |>
+  arrange(p_value)
+
+# Save results
+write_csv(fisher_combo_results, "/work/pi_jlb_umass_edu/blanchardlab/jaz/fishers_test_by_order_combined.csv")
+
+
+
+
+# PLOTS
+
+# Load and filter metadata
+metadata <- read_csv("data/BW_15yrs_metadata.csv") |>
+  separate(`...4`, c("Site", "Treatment", "Subplot", "Layer"), "-") |>
+  rename(Inc = `...3`, DataType = `...5`) |>
+  select(Site, Treatment, Subplot, Layer, Inc, DataType, `IMG Portal`) |>
+  filter(DataType == "metaT", Inc == "Native") |>
+  mutate(`IMG Portal` = as.character(`IMG Portal`))
+
+# Filter IMG/M dataset only
+RdRP_img <- RdRP_data |> filter(Set == "IMG/M - Chen et al 2019")
+
+# Join RdRP data with metadata
+joined_data <- left_join(RdRP_img, metadata, by = c("Source" = "IMG Portal"))
+
+# Count viral orders per treatment
+summary_order_treatment <- joined_data |>
+  filter(!is.na(Order), !is.na(Treatment)) |>
+  count(Order, Treatment, name = "InstanceCount") |>
+  pivot_wider(names_from = Treatment, values_from = InstanceCount, values_fill = 0)
+
+# Rename columns for easier reference
+summary_order_treatment <- summary_order_treatment |>
+  rename(control_count = C, heated_count = H)
+
+total_control <- sum(summary_order_treatment$control_count)
+total_heated <- sum(summary_order_treatment$heated_count)
+
+# Fisher's Exact Test: for each Order, compare control vs heated counts
+fisher_results <- summary_order_treatment |>
+  rowwise() |>
+  mutate(
+    p_value = fisher.test(matrix(c(control_count, heated_count,
+                                    total_control - control_count,
+                                    total_heated - heated_count),
+                                  nrow = 2))$p.value
+  ) |>
+  ungroup() |>
+  arrange(p_value)
+
+# Fisher's test results
+write_csv(fisher_results, "/work/pi_jlb_umass_edu/blanchardlab/jaz/fishers_test_by_order.csv")
+
+# Plot: -log10(p-value) of control vs heated
+fisher_results |> 
+  mutate(log_p = -log10(p_value)) |>
+  ggplot(aes(x = reorder(Order, log_p), y = log_p)) +
+  geom_col(fill = "#006400") +
+  geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "gray40") +
+  labs(title = "Fisher's Test: Control vs Heated",
+       x = "Viral Order", y = "-log10(p-value)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+ggsave("/work/pi_jlb_umass_edu/blanchardlab/jaz/fisher_plot_control_vs_heated.png", width = 10, height = 6, dpi = 300)
+
+
+# MINERAL vs ORGANIC 
+
+# Count viral orders per layer
+summary_order_layer <- joined_data |>
+  filter(!is.na(Order), !is.na(Layer)) |>
+  count(Order, Layer, name = "InstanceCount") |>
+  pivot_wider(names_from = Layer, values_from = InstanceCount, values_fill = 0)
+
+# Rename for clarity
+summary_order_layer <- summary_order_layer |>
+  rename(organic_count = O, mineral_count = M)
+
+total_organic <- sum(summary_order_layer$organic_count)
+total_mineral <- sum(summary_order_layer$mineral_count)
+
+# Fisher's Exact Test for layer comparison
+fisher_layer_results <- summary_order_layer |>
+  rowwise() |>
+  mutate(
+    p_value = fisher.test(matrix(c(organic_count, mineral_count,
+                                    total_organic - organic_count,
+                                    total_mineral - mineral_count),
+                                  nrow = 2))$p.value
+  ) |>
+  ungroup() |>
+  arrange(p_value)
+
+# Save results
+write_csv(fisher_layer_results, "/work/pi_jlb_umass_edu/blanchardlab/jaz/fishers_test_by_order_layer.csv")
+
+# Plot: -log10(p-value) of organic vs mineral
+fisher_layer_results |> 
+  mutate(log_p = -log10(p_value)) |>
+  ggplot(aes(x = reorder(Order, log_p), y = log_p)) +
+  geom_col(fill = "#228B22") +
+  geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "gray40") +
+  labs(title = "Fisher's Test: Organic vs Mineral",
+       x = "Viral Order", y = "-log10(p-value)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+ggsave("/work/pi_jlb_umass_edu/blanchardlab/jaz/fisher_plot_organic_vs_mineral.png", width = 10, height = 6, dpi = 300)
+
+
+# TREATMENT + LAYER COMBINED
+
+# Count viral orders per treatment and layer
+summary_order_combo <- joined_data |>
+  filter(!is.na(Order), !is.na(Treatment), !is.na(Layer)) |>
+  count(Order, Treatment, Layer, name = "InstanceCount") |>
+  unite("group", Treatment:Layer) |>
+  pivot_wider(names_from = group, values_from = InstanceCount, values_fill = 0)
+
+# Assign totals and run Fisher's test for each order
+combo_groups <- colnames(summary_order_combo)[-1]
+total_counts <- colSums(summary_order_combo[combo_groups])
+
+fisher_combo_results <- summary_order_combo |>
+  rowwise() |>
+  mutate(
+    p_value = fisher.test(matrix(
+      c_across(all_of(combo_groups)),
+      nrow = 2
+    ))$p.value
+  ) |>
+  ungroup() |>
+  arrange(p_value)
+
+# Save results
+write_csv(fisher_combo_results, "/work/pi_jlb_umass_edu/blanchardlab/jaz/fishers_test_by_order_combined.csv")
+
+# Plot: -log10(p-value) of combined groups
+fisher_combo_results |> 
+  mutate(log_p = -log10(p_value)) |>
+  ggplot(aes(x = reorder(Order, log_p), y = log_p)) +
+  geom_col(fill = "#66CDAA") +
+  geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "gray40") +
+  labs(title = "Fisher's Test: Treatment + Layer Combined",
+       x = "Viral Order", y = "-log10(p-value)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+ggsave("/work/pi_jlb_umass_edu/blanchardlab/jaz/fisher_plot_combined.png", width = 10, height = 6, dpi = 300)
+
+
+
+
+
+# HTML Fisher (Jeffs way) 
+
+# Load and filter metadata
+metadata <- read_csv("data/BW_15yrs_metadata.csv") |>
+  separate(`...4`, c("Site", "Treatment", "Subplot", "Layer"), "-") |>
+  rename(Inc = `...3`, DataType = `...5`) |>
+  select(Site, Treatment, Subplot, Layer, Inc, DataType, `IMG Portal`) |>
+  filter(DataType == "metaT", Inc == "Native") |>
+  mutate(`IMG Portal` = as.character(`IMG Portal`))
+
+# Filter IMG/M dataset only
+RdRP_img <- RdRP_data |> filter(Set == "IMG/M - Chen et al 2019")
+
+# Join RdRP data with metadata
+joined_data <- left_join(RdRP_img, metadata, by = c("Source" = "IMG Portal"))
+
+# PRESENCE/ABSENCE FISHER TEST BY RvANI90
+
+# Binary presence/absence per RvANI90 and Subplot
+rvani_fisher_data <- joined_data |>
+  filter(!is.na(RvANI90), !is.na(Treatment), !is.na(Subplot)) |>
+  group_by(RvANI90, Treatment, Subplot) |>
+  summarise(count = n(), .groups = "drop") |>
+  mutate(present = ifelse(count > 0, 1, 0)) |>
+  group_by(RvANI90, Treatment) |>
+  summarise(present_count = sum(present), .groups = "drop") |>
+  pivot_wider(names_from = Treatment, values_from = present_count, values_fill = 0)
+
+# Add absent counts assuming 7 subplots per group
+rvani_fisher_data <- rvani_fisher_data |>
+  mutate(HA = 7 - H, CA = 7 - C)
+
+# Fisher's Exact Test on each RvANI90
+fisher_rvani_results <- rvani_fisher_data |>
+  rowwise() |>
+  mutate(
+    p_value = fisher.test(matrix(c(H, HA, C, CA), nrow = 2))$p.value
+  ) |>
+  ungroup() |>
+  arrange(p_value)
+
+# Save results
+write_csv(fisher_rvani_results, "/work/pi_jlb_umass_edu/blanchardlab/jaz/fishers_test_by_rvani90_subplot.csv")
+
+#Plot
+
+# Load and filter metadata
+metadata <- read_csv("data/BW_15yrs_metadata.csv") |>
+  separate(`...4`, c("Site", "Treatment", "Subplot", "Layer"), "-") |>
+  rename(Inc = `...3`, DataType = `...5`) |>
+  select(Site, Treatment, Subplot, Layer, Inc, DataType, `IMG Portal`) |>
+  filter(DataType == "metaT", Inc == "Native") |>
+  mutate(`IMG Portal` = as.character(`IMG Portal`))
+
+# Filter IMG/M dataset only
+RdRP_img <- RdRP_data |> filter(Set == "IMG/M - Chen et al 2019")
+
+# Join RdRP data with metadata
+joined_data <- left_join(RdRP_img, metadata, by = c("Source" = "IMG Portal"))
+
+# PRESENCE/ABSENCE FISHER TEST BY RvANI90 7 v 7
+
+# Binary presence/absence per RvANI90 and Subplot
+rvani_fisher_data <- joined_data |>
+  filter(!is.na(RvANI90), !is.na(Treatment), !is.na(Subplot)) |>
+  group_by(RvANI90, Treatment, Subplot) |>
+  summarise(count = n(), .groups = "drop") |>
+  mutate(present = ifelse(count > 0, 1, 0)) |>
+  group_by(RvANI90, Treatment) |>
+  summarise(present_count = sum(present), .groups = "drop") |>
+  pivot_wider(names_from = Treatment, values_from = present_count, values_fill = 0)
+
+# Add absent counts assuming 7 subplots per group
+rvani_fisher_data <- rvani_fisher_data |>
+  mutate(HA = 7 - H, CA = 7 - C)
+
+# Fisher's Exact Test on each RvANI90
+fisher_rvani_results <- rvani_fisher_data |>
+  rowwise() |>
+  mutate(
+    p_value = fisher.test(matrix(c(H, HA, C, CA), nrow = 2))$p.value
+  ) |>
+  ungroup() |>
+  arrange(p_value)
+
+# Save results
+write_csv(fisher_rvani_results, "/work/pi_jlb_umass_edu/blanchardlab/jaz/fishers_test_by_rvani90_subplot.csv")
+
+# Plot -log10(p-value) for most significantly enriched RvANI90s
+fisher_rvani_results |> 
+  mutate(log_p = -log10(p_value)) |> 
+  slice_max(log_p, n = 25) |> 
+  ggplot(aes(x = reorder(RvANI90, log_p), y = log_p)) +
+  geom_col(fill = "#228B22") +
+  geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "gray40") +
+  labs(title = "Fisher's Test: Top 25 RvANI90 Species (Presence in Subplots)",
+       x = "RvANI90", y = "-log10(p-value)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+ggsave("/work/pi_jlb_umass_edu/blanchardlab/jaz/fisher_rvani90_top25.png", width = 10, height = 6, dpi = 300)
+
+# PRESENCE/ABSENCE FISHER TEST BY RvANI90 (14 vs 14) 
+
+rvani_fisher_14 <- joined_data |>
+  filter(!is.na(RvANI90), !is.na(Treatment), !is.na(Subplot), !is.na(Layer)) |>
+  group_by(RvANI90, Treatment, Subplot, Layer) |>
+  summarise(count = n(), .groups = "drop") |>
+  mutate(present = ifelse(count > 0, 1, 0)) |>
+  group_by(RvANI90, Treatment) |>
+  summarise(present_count = sum(present), .groups = "drop") |>
+  pivot_wider(names_from = Treatment, values_from = present_count, values_fill = 0) |>
+  mutate(HA = 14 - H, CA = 14 - C)
+
+fisher_rvani_14_results <- rvani_fisher_14 |>
+  rowwise() |>
+  mutate(p_value = fisher.test(matrix(c(H, HA, C, CA), nrow = 2))$p.value) |>
+  ungroup() |>
+  arrange(p_value)
+
+write_csv(fisher_rvani_14_results, "/work/pi_jlb_umass_edu/blanchardlab/jaz/fishers_test_by_rvani90_14_samples.csv")
+
+fisher_rvani_14_results |> 
+  mutate(log_p = -log10(p_value)) |> 
+  slice_max(log_p, n = 25) |> 
+  ggplot(aes(x = reorder(RvANI90, log_p), y = log_p)) +
+  geom_col(fill = "#006400") +
+  geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "gray40") +
+  labs(title = "Fisher's Test: Top 25 RvANI90 Species (Presence in 14 Samples)",
+       x = "RvANI90", y = "-log10(p-value)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+ggsave("/work/pi_jlb_umass_edu/blanchardlab/jaz/fisher_rvani90_top25_14samples.png", width = 10, height = 6, dpi = 300)
+
+
+
+
+
+# 14 v 14 +METADATA (PT2) 
+
+
+# Load and filter metadata
+metadata <- read_csv("data/BW_15yrs_metadata.csv") |>
+  separate(`...4`, c("Site", "Treatment", "Subplot", "Layer"), "-") |>
+  rename(Inc = `...3`, DataType = `...5`) |>
+  select(Site, Treatment, Subplot, Layer, Inc, DataType, `IMG Portal`) |>
+  filter(DataType == "metaT", Inc == "Native") |>
+  mutate(`IMG Portal` = as.character(`IMG Portal`))
+
+# Filter IMG/M dataset only
+RdRP_img <- RdRP_data |> filter(Set == "IMG/M - Chen et al 2019")
+
+# Join RdRP data with metadata
+joined_data <- left_join(RdRP_img, metadata, by = c("Source" = "IMG Portal"))
+
+# -------- PRESENCE/ABSENCE FISHER TEST BY RvANI90 (7 vs 7) --------
+
+# Binary presence/absence per RvANI90 and Subplot
+rvani_fisher_data <- joined_data |>
+  filter(!is.na(RvANI90), !is.na(Treatment), !is.na(Subplot)) |>
+  group_by(RvANI90, Treatment, Subplot) |>
+  summarise(count = n(), .groups = "drop") |>
+  mutate(present = ifelse(count > 0, 1, 0)) |>
+  group_by(RvANI90, Treatment) |>
+  summarise(present_count = sum(present), .groups = "drop") |>
+  pivot_wider(names_from = Treatment, values_from = present_count, values_fill = 0)
+
+# Add absent counts assuming 7 subplots per group
+rvani_fisher_data <- rvani_fisher_data |>
+  mutate(HA = 7 - H, CA = 7 - C)
+
+# Fisher's Exact Test on each RvANI90
+fisher_rvani_results <- rvani_fisher_data |>
+  rowwise() |>
+  mutate(
+    p_value = fisher.test(matrix(c(H, HA, C, CA), nrow = 2))$p.value
+  ) |>
+  ungroup() |>
+  arrange(p_value)
+
+# Save results
+write_csv(fisher_rvani_results, "/work/pi_jlb_umass_edu/blanchardlab/jaz/fishers_test_by_rvani90_subplot.csv")
+
+# Plot -log10(p-value) for most significantly enriched RvANI90s
+fisher_rvani_results |> 
+  mutate(log_p = -log10(p_value)) |> 
+  slice_max(log_p, n = 25) |> 
+  ggplot(aes(x = reorder(RvANI90, log_p), y = log_p)) +
+  geom_col(fill = "#228B22") +
+  geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "gray40") +
+  labs(title = "Fisher's Test: Top 25 RvANI90 Species (Presence in Subplots)",
+       x = "RvANI90", y = "-log10(p-value)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+ggsave("/work/pi_jlb_umass_edu/blanchardlab/jaz/fisher_rvani90_top25.png", width = 10, height = 6, dpi = 300)
+
+# PRESENCE/ABSENCE FISHER TEST BY RvANI90 (14 vs 14) 
+
+rvani_fisher_14 <- joined_data |>
+  filter(!is.na(RvANI90), !is.na(Treatment), !is.na(Subplot), !is.na(Layer)) |>
+  group_by(RvANI90, Treatment, Subplot, Layer) |>
+  summarise(count = n(), .groups = "drop") |>
+  mutate(present = ifelse(count > 0, 1, 0)) |>
+  group_by(RvANI90, Treatment) |>
+  summarise(present_count = sum(present), .groups = "drop") |>
+  pivot_wider(names_from = Treatment, values_from = present_count, values_fill = 0) |>
+  mutate(HA = 14 - H, CA = 14 - C)
+
+fisher_rvani_14_results <- rvani_fisher_14 |>
+  rowwise() |>
+  mutate(p_value = fisher.test(matrix(c(H, HA, C, CA), nrow = 2))$p.value) |>
+  ungroup() |>
+  arrange(p_value)
+
+write_csv(fisher_rvani_14_results, "/work/pi_jlb_umass_edu/blanchardlab/jaz/fishers_test_by_rvani90_14_samples.csv")
+
+fisher_rvani_14_results |> 
+  mutate(log_p = -log10(p_value)) |> 
+  slice_max(log_p, n = 25) |> 
+  ggplot(aes(x = reorder(RvANI90, log_p), y = log_p)) +
+  geom_col(fill = "#006400") +
+  geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "gray40") +
+  labs(title = "Fisher's Test: Top 25 RvANI90 Species (Presence in 14 Samples)",
+       x = "RvANI90", y = "-log10(p-value)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+ggsave("/work/pi_jlb_umass_edu/blanchardlab/jaz/fisher_rvani90_top25_14samples.png", width = 10, height = 6, dpi = 300)
+
+
+# JOIN WITH METADATA FOR INSPECTION 
+fisher_rvani_14_joined <- fisher_rvani_14_results |> 
+  right_join(joined_data, by = "RvANI90")
+
+fisher_rvani_14_signif <- fisher_rvani_14_joined |> 
+  filter(p_value < 0.005) |> 
+  select(RvANI90, H, HA, C, CA, p_value, Treatment, Subplot, Layer, RID, Length, Phylum, Class, Order, Family)
+
+write_csv(fisher_rvani_14_signif, "/work/pi_jlb_umass_edu/blanchardlab/jaz/fisher_rvani90_metadata_filtered.csv")
+
+# Faceted Plot by Order 
+fisher_rvani_14_signif |> 
+  mutate(log_p = -log10(p_value)) |> 
+  ggplot(aes(x = reorder(RvANI90, log_p), y = log_p, fill = Order)) +
+  geom_col() +
+  geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "gray40") +
+  facet_wrap(~Order, scales = "free_x") +
+  labs(title = "Significant RvANI90 Species by Viral Order",
+       x = "RvANI90", y = "-log10(p-value)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+ggsave("/work/pi_jlb_umass_edu/blanchardlab/jaz/fisher_rvani90_faceted_by_order.png", width = 12, height = 8, dpi = 300)
+
+
+
+
+# HEATMAP
+
+install.packages (“pheatmap”)
+library(pheatmap)
+
+# Create sample IDs (e.g., C1_O, C2_M, H1_O, etc.)
+joined_data <- joined_data |>
+  mutate(sample_id = paste(Treatment, Subplot, Layer, sep = "_"))
+
+# Binary presence matrix: rows = RvANI90, columns = sample IDs
+presence_matrix <- joined_data |>
+  filter(RvANI90 %in% fisher_rvani_14_signif$RvANI90) |>
+  distinct(RvANI90, sample_id) |>
+  mutate(present = 1) |>
+  pivot_wider(names_from = sample_id, values_from = present, values_fill = 0) |>
+  column_to_rownames("RvANI90") |>
+  as.matrix()
+
+# Plot and save heatmap
+pheatmap(presence_matrix,
+         cluster_rows = TRUE,
+         cluster_cols = TRUE,
+         show_rownames = TRUE,
+         fontsize_row = 6,
+         main = "Presence of Significant RvANI90s Across Samples",
+         filename = "/work/pi_jlb_umass_edu/blanchardlab/jaz/heatmap_rvani90_presence.png")
+
+
