@@ -1,0 +1,220 @@
+#Viral order/ Treatment heated vs control: 
+
+# Load libraries
+library(tidyverse)
+library(ggplot2)
+library(readr)
+library(conflicted)
+library(dplyr)
+conflicts_prefer(dplyr::filter)
+
+# Set working directory 
+setwd("/work/pi_jlb_umass_edu/blanchardlab/RNA_phages")
+
+# Load RdRP data
+RdRP_data <- read_tsv("data/RiboV1.4_Info.tsv")
+
+# Load and filter metadata
+metadata <- read_csv("data/BW_15yrs_metadata.csv") |>
+  separate(`...4`, c("Site", "Treatment", "Subplot", "Layer"), "-") |>
+  rename(Inc = `...3`, DataType = `...5`) |>
+  select(Site, Treatment, Subplot, Layer, Inc, DataType, `IMG Portal`) |>
+  filter(DataType == "metaT", Inc == "Native") |>
+  mutate(`IMG Portal` = as.character(`IMG Portal`))
+
+# Filter IMG/M dataset only
+RdRP_img <- RdRP_data |> filter(Set == "IMG/M - Chen et al 2019")
+
+# Join RdRP data with metadata
+joined_data <- left_join(RdRP_img, metadata, by = c("Source" = "IMG Portal"))
+
+# Count viral orders per treatment
+summary_order_treatment <- joined_data |>
+  filter(!is.na(Order), !is.na(Treatment)) |>
+  count(Order, Treatment, name = "InstanceCount") |>
+  arrange(desc(InstanceCount))
+
+# Debug print
+print(summary_order_treatment)
+
+# Plot viral order counts split by treatment
+plot_obj <- ggplot(summary_order_treatment, aes(x = reorder(Order, -InstanceCount), y = InstanceCount, fill = Treatment)) +
+  geom_col(position = "dodge") +
+  labs(title = "RdRP Instances by Viral Order and Treatment",
+       x = "Viral Order", y = "Instance Count") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+print(plot_obj)
+ggsave("/work/pi_jlb_umass_edu/blanchardlab/jaz/viral_order_by_treatment.png", plot = plot_obj, width = 10, height = 6, dpi = 300)
+
+> print(summary_order_treatment)
+# A tibble: 86 × 3
+   Order              Treatment InstanceCount
+   <chr>              <chr>             <int>
+ 1 Picornavirales     C                  1022
+ 2 Picornavirales     H                   563
+ 3 Ourlivirales       C                   432
+ 4 Ourlivirales       H                   328
+ 5 Cryppavirales      H                   270
+ 6 o.0042             C                   266
+ 7 Cryppavirales      C                   252
+ 8 o.0005.base-Patata C                   242
+ 9 Nodamuvirales      C                   213
+10 Tolivirales        C                   203
+
+
+
+# Viral order vs and soil layer: 
+# Load libraries
+library(tidyverse)
+library(ggplot2)
+library(readr)
+library(conflicted)
+library(dplyr)
+conflicts_prefer(dplyr::filter)
+
+# Set working directory 
+setwd("/work/pi_jlb_umass_edu/blanchardlab/RNA_phages")
+
+# Load RdRP data
+RdRP_data <- read_tsv("data/RiboV1.4_Info.tsv")
+
+# Load and filter metadata
+metadata <- read_csv("data/BW_15yrs_metadata.csv") |>
+  separate(`...4`, c("Site", "Treatment", "Subplot", "Layer"), "-") |>
+  rename(Inc = `...3`, DataType = `...5`) |>
+  select(Site, Treatment, Subplot, Layer, Inc, DataType, `IMG Portal`) |>
+  filter(DataType == "metaT", Inc == "Native") |>
+  mutate(`IMG Portal` = as.character(`IMG Portal`))
+
+# Filter IMG/M dataset only
+RdRP_img <- RdRP_data |> filter(Set == "IMG/M - Chen et al 2019")
+
+# Join RdRP data with metadata
+joined_data <- left_join(RdRP_img, metadata, by = c("Source" = "IMG Portal"))
+
+# Count viral orders per treatment
+summary_order_treatment <- joined_data |>
+  filter(!is.na(Order), !is.na(Treatment)) |>
+  count(Order, Treatment, name = "InstanceCount") |>
+  arrange(desc(InstanceCount))
+
+# Plot viral order counts split by treatment
+plot_obj <- ggplot(summary_order_treatment, aes(x = reorder(Order, -InstanceCount), y = InstanceCount, fill = Treatment)) +
+  geom_col(position = "dodge") +
+  labs(title = "RdRP Instances by Viral Order and Treatment",
+       x = "Viral Order", y = "Instance Count") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+print(plot_obj)
+ggsave("/work/pi_jlb_umass_edu/blanchardlab/jaz/viral_order_by_treatment.png", plot = plot_obj, width = 10, height = 6, dpi = 300)
+
+# Count viral orders per soil layer (organic vs mineral)
+summary_order_layer <- joined_data |>
+  filter(!is.na(Order), !is.na(Layer)) |>
+  count(Order, Layer, name = "InstanceCount") |>
+  arrange(desc(InstanceCount))
+
+# Plot viral order counts split by soil layer
+plot_layer <- ggplot(summary_order_layer, aes(x = reorder(Order, -InstanceCount), y = InstanceCount, fill = Layer)) +
+  geom_col(position = "dodge") +
+  labs(title = "RdRP Instances by Viral Order and Soil Layer",
+       x = "Viral Order", y = "Instance Count") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+print(plot_layer)
+ggsave("/work/pi_jlb_umass_edu/blanchardlab/jaz/viral_order_by_layer.png", plot = plot_layer, width = 10, height = 6, dpi = 300)
+
+
+
+#Combined: 
+
+# Load libraries
+library(tidyverse)
+library(ggplot2)
+library(readr)
+library(conflicted)
+library(dplyr)
+conflicts_prefer(dplyr::filter)
+
+# Set working directory 
+setwd("/work/pi_jlb_umass_edu/blanchardlab/RNA_phages")
+
+# Load RdRP data
+RdRP_data <- read_tsv("data/RiboV1.4_Info.tsv")
+
+# Load and filter metadata
+metadata <- read_csv("data/BW_15yrs_metadata.csv") |>
+  separate(`...4`, c("Site", "Treatment", "Subplot", "Layer"), "-") |>
+  rename(Inc = `...3`, DataType = `...5`) |>
+  select(Site, Treatment, Subplot, Layer, Inc, DataType, `IMG Portal`) |>
+  filter(DataType == "metaT", Inc == "Native") |>
+  mutate(`IMG Portal` = as.character(`IMG Portal`))
+
+# Filter IMG/M dataset only
+RdRP_img <- RdRP_data |> filter(Set == "IMG/M - Chen et al 2019")
+
+# Join RdRP data with metadata
+joined_data <- left_join(RdRP_img, metadata, by = c("Source" = "IMG Portal"))
+
+# Count viral orders per treatment
+summary_order_treatment <- joined_data |>
+  filter(!is.na(Order), !is.na(Treatment)) |>
+  count(Order, Treatment, name = "InstanceCount") |>
+  arrange(desc(InstanceCount))
+
+# Plot viral order counts split by treatment
+plot_obj <- ggplot(summary_order_treatment, aes(x = reorder(Order, -InstanceCount), y = InstanceCount, fill = Treatment)) +
+  geom_col(position = "dodge") +
+  labs(title = "RdRP Instances by Viral Order and Treatment",
+       x = "Viral Order", y = "Instance Count") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+print(plot_obj)
+ggsave("/work/pi_jlb_umass_edu/blanchardlab/jaz/viral_order_by_treatment.png", plot = plot_obj, width = 10, height = 6, dpi = 300)
+
+# Count viral orders per soil layer (organic vs mineral)
+summary_order_layer <- joined_data |>
+  filter(!is.na(Order), !is.na(Layer)) |>
+  count(Order, Layer, name = "InstanceCount") |>
+  arrange(desc(InstanceCount))
+
+# Plot viral order counts split by soil layer
+plot_layer <- ggplot(summary_order_layer, aes(x = reorder(Order, -InstanceCount), y = InstanceCount, fill = Layer)) +
+  geom_col(position = "dodge") +
+  labs(title = "RdRP Instances by Viral Order and Soil Layer",
+       x = "Viral Order", y = "Instance Count") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+print(plot_layer)
+ggsave("/work/pi_jlb_umass_edu/blanchardlab/jaz/viral_order_by_layer.png", plot = plot_layer, width = 10, height = 6, dpi = 300)
+
+# Count viral orders by both treatment and layer
+summary_order_combined <- joined_data |>
+  filter(!is.na(Order), !is.na(Treatment), !is.na(Layer)) |>
+  count(Order, Treatment, Layer, name = "InstanceCount") |>
+  arrange(desc(InstanceCount))
+
+# Plot viral order counts split by treatment and layer
+plot_combined <- ggplot(summary_order_combined, aes(x = reorder(Order, -InstanceCount), y = InstanceCount, fill = interaction(Treatment, Layer))) +
+  geom_col(position = "dodge") +
+  labs(title = "RdRP Instances by Viral Order, Treatment, and Layer",
+       x = "Viral Order", y = "Instance Count", fill = "Treatment-Layer") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+print(plot_combined)
+ggsave("/work/pi_jlb_umass_edu/blanchardlab/jaz/viral_order_by_treatment_and_layer.png", plot = plot_combined, width = 12, height = 6, dpi = 300)
+
+
+
+
+
+
+
+
